@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+downloads/
+all_songs.txt
+songs.json
+yt_downloader.py
+r2_uploader.py
+*stable_version
+.venv/
+*.history
