@@ -10,7 +10,7 @@ from autocomplete import play_autocomplete, playlists_autocomplete
 
 load_dotenv()
 
-TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN = os.getenv("DISCORD_TOKEN_DEV")
 INTENTS = discord.Intents.default()
 INTENTS.message_content = False
 
