@@ -41,7 +41,7 @@ async def on_ready():
 @app_commands.describe(song="請選擇歌曲")
 @app_commands.autocomplete(song=play_autocomplete)
 async def play(interaction: discord.Interaction, song: int):
-    """加入歌曲"""
+    """播放歌曲"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /play {song}（guild_id={guild_id}, user_id={user_id}）")
