@@ -99,61 +99,29 @@ async def disconnect(interaction: discord.Interaction):
 
 
 # --- 這裡把 /stop 改為「暫停」 ---
-@bot.tree.command(name="stop")
-async def stop_as_pause(interaction: discord.Interaction):
-    """沿用 /stop 指令名，但行為改為「暫停」"""
+@bot.tree.command(name="pause")
+async def pause(interaction: discord.Interaction):
+    """暫停播放"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
-    logging.info(f"📝 使用者輸入 /stop（pause）（guild_id={guild_id}, user_id={user_id}）")
+    logging.info(f"📝 使用者輸入 /pause（guild_id={guild_id}, user_id={user_id}）")
     state = utils.get_guild_state(interaction.guild)
 
     if not state.vc:
         await interaction.response.send_message("⚠️ 機器人未連線語音")
         return
 
-    # 若正在播放 → 暫停
     if state.vc.is_playing():
         state.vc.pause()
         state.is_paused = True
         await interaction.response.send_message("⏸️ 已暫停播放。使用 `/resume` 可繼續。")
         return
 
-    # 已經暫停
     if state.vc.is_paused() or state.is_paused:
         await interaction.response.send_message("ℹ️ 目前已是暫停狀態。使用 `/resume` 可繼續。")
         return
 
     await interaction.response.send_message("⚠️ 沒有播放中的歌曲可暫停")
-
-
-# --- 提供直覺的 /pause 指令（與 /stop 相同行為） ---
-@bot.tree.command(name="pause")
-async def pause(interaction: discord.Interaction):
-    return await stop_as_pause(interaction)
-
-
-@bot.tree.command(name="resume")
-async def resume(interaction: discord.Interaction):
-    guild_id = interaction.guild_id
-    user_id = interaction.user.id
-    logging.info(f"📝 使用者輸入 /resume（guild_id={guild_id}, user_id={user_id}）")
-    state = utils.get_guild_state(interaction.guild)
-
-    if not state.vc:
-        await interaction.response.send_message("⚠️ 機器人未連線語音")
-        return
-
-    if state.vc.is_paused() or state.is_paused:
-        try:
-            state.vc.resume()
-            state.is_paused = False
-            await interaction.response.send_message("▶️ 已恢復播放。")
-        except Exception:
-            logging.exception("resume 失敗")
-            await interaction.response.send_message("❌ 無法恢復播放，請稍後再試。")
-        return
-
-    await interaction.response.send_message("ℹ️ 目前沒有已暫停的歌曲。")
 
 
 @bot.tree.command(name="skip")
