@@ -14,7 +14,7 @@ load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN_DEV")
 if not TOKEN:
-    raise RuntimeError("環境變數缺少DISCORD_TOKEN_DEV")
+    raise RuntimeError("環境變數缺少 DISCORD_TOKEN_DEV")
 
 INTENTS = discord.Intents.default()
 INTENTS.message_content = False
@@ -25,7 +25,6 @@ bot = commands.Bot(command_prefix="!", intents=INTENTS)
 
 @bot.event
 async def on_ready():
-    # 拿正在運行的 event loop，供 after-callback 使用
     utils.set_main_loop(asyncio.get_running_loop())
     await utils.load_songs()
     logging.info("✅ 登入成功：%s", bot.user)
@@ -81,7 +80,8 @@ async def disconnect(interaction: discord.Interaction):
         logging.info(f"🔧 [disconnect] 原始佇列長度：{len(state.queue)}，是否有 vc：{state.vc is not None}")
         state.queue.clear()
         state.is_playing = False
-        logging.info(f"🔧 [disconnect] 已清空佇列與播放狀態")
+        state.is_paused = False
+        logging.info(f"🔧 [disconnect] 已清空佇列與播放/暫停狀態")
         if state.vc:
             logging.info(f"🔧 [disconnect] 正在呼叫 vc.disconnect()...")
             try:
@@ -98,18 +98,62 @@ async def disconnect(interaction: discord.Interaction):
     bot.loop.create_task(cleanup())
 
 
+# --- 這裡把 /stop 改為「暫停」 ---
 @bot.tree.command(name="stop")
-async def stop(interaction: discord.Interaction):
+async def stop_as_pause(interaction: discord.Interaction):
+    """沿用 /stop 指令名，但行為改為「暫停」"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
-    logging.info(f"📝 使用者輸入 /stop（guild_id={guild_id}, user_id={user_id}）")
+    logging.info(f"📝 使用者輸入 /stop（pause）（guild_id={guild_id}, user_id={user_id}）")
     state = utils.get_guild_state(interaction.guild)
-    if state.vc and state.vc.is_playing():
-        # 不清空佇列；停止當前歌曲 → after-callback 會自動接下一首
-        state.vc.stop()
-        await interaction.response.send_message("⏹️ 已停止當前歌曲。若佇列中仍有歌曲，將立即播放下一首。")
-    else:
-        await interaction.response.send_message("⚠️ 沒有播放中的歌曲")
+
+    if not state.vc:
+        await interaction.response.send_message("⚠️ 機器人未連線語音")
+        return
+
+    # 若正在播放 → 暫停
+    if state.vc.is_playing():
+        state.vc.pause()
+        state.is_paused = True
+        await interaction.response.send_message("⏸️ 已暫停播放。使用 `/resume` 可繼續。")
+        return
+
+    # 已經暫停
+    if state.vc.is_paused() or state.is_paused:
+        await interaction.response.send_message("ℹ️ 目前已是暫停狀態。使用 `/resume` 可繼續。")
+        return
+
+    await interaction.response.send_message("⚠️ 沒有播放中的歌曲可暫停")
+
+
+# --- 提供直覺的 /pause 指令（與 /stop 相同行為） ---
+@bot.tree.command(name="pause")
+async def pause(interaction: discord.Interaction):
+    return await stop_as_pause(interaction)
+
+
+@bot.tree.command(name="resume")
+async def resume(interaction: discord.Interaction):
+    guild_id = interaction.guild_id
+    user_id = interaction.user.id
+    logging.info(f"📝 使用者輸入 /resume（guild_id={guild_id}, user_id={user_id}）")
+    state = utils.get_guild_state(interaction.guild)
+
+    if not state.vc:
+        await interaction.response.send_message("⚠️ 機器人未連線語音")
+        return
+
+    if state.vc.is_paused() or state.is_paused:
+        try:
+            state.vc.resume()
+            state.is_paused = False
+            await interaction.response.send_message("▶️ 已恢復播放。")
+        except Exception:
+            logging.exception("resume 失敗")
+            await interaction.response.send_message("❌ 無法恢復播放，請稍後再試。")
+        return
+
+    await interaction.response.send_message("ℹ️ 目前沒有已暫停的歌曲。")
 
 
 @bot.tree.command(name="skip")
@@ -118,9 +162,18 @@ async def skip(interaction: discord.Interaction):
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /skip（guild_id={guild_id}, user_id={user_id}）")
     state = utils.get_guild_state(interaction.guild)
-    if state.vc and state.vc.is_playing():
-        state.vc.stop()
-        await interaction.response.send_message("⏭️ 用戶手動跳過歌曲")
+    if state.vc and (state.vc.is_playing() or state.vc.is_paused()):
+        # 若暫停中也允許跳過
+        try:
+            # 若在暫停狀態，resume 再 stop 可以避免某些實作上 stop 無效的情況
+            if state.vc.is_paused():
+                state.vc.resume()
+            state.vc.stop()
+        except Exception:
+            logging.exception("skip 失敗")
+            await interaction.response.send_message("❌ 跳過失敗，請稍後再試。")
+            return
+        await interaction.response.send_message("⏭️ 已跳過當前歌曲")
     else:
         await interaction.response.send_message("⚠️ 沒有播放中的歌曲")
 

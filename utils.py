@@ -80,6 +80,7 @@ class GuildState:
     def __init__(self):
         self.queue = []                       # list[int]
         self.is_playing = False
+        self.is_paused = False
         self.vc: discord.VoiceClient | None = None
         self.current_mp3_seconds = None       # float | None
         self._play_start_time = None          # float | None
@@ -106,6 +107,7 @@ class GuildState:
         if self.is_playing or not self.queue:
             return
         self.is_playing = True
+        self.is_paused = False
 
         song_id = self.queue[0]
         song_info = get_song_info_by_id(song_id)
@@ -191,6 +193,7 @@ async def handle_after_play(guild: discord.Guild, text_channel: discord.TextChan
 
     # 重置播放旗標
     state.is_playing = False
+    state.is_paused = False 
     state.current_mp3_seconds = None
     state._play_start_time = None
 
