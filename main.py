@@ -98,7 +98,6 @@ async def disconnect(interaction: discord.Interaction):
     bot.loop.create_task(cleanup())
 
 
-# --- 這裡把 /stop 改為「暫停」 ---
 @bot.tree.command(name="pause")
 async def pause(interaction: discord.Interaction):
     """暫停播放"""
@@ -122,6 +121,30 @@ async def pause(interaction: discord.Interaction):
         return
 
     await interaction.response.send_message("⚠️ 沒有播放中的歌曲可暫停")
+
+
+@bot.tree.command(name="resume")
+async def resume(interaction: discord.Interaction):
+    guild_id = interaction.guild_id
+    user_id = interaction.user.id
+    logging.info(f"📝 使用者輸入 /resume（guild_id={guild_id}, user_id={user_id}）")
+    state = utils.get_guild_state(interaction.guild)
+
+    if not state.vc:
+        await interaction.response.send_message("⚠️ 機器人未連線語音")
+        return
+
+    if state.vc.is_paused() or state.is_paused:
+        try:
+            state.vc.resume()
+            state.is_paused = False
+            await interaction.response.send_message("▶️ 已恢復播放。")
+        except Exception:
+            logging.exception("resume 失敗")
+            await interaction.response.send_message("❌ 無法恢復播放，請稍後再試。")
+        return
+
+    await interaction.response.send_message("ℹ️ 目前沒有已暫停的歌曲。")
 
 
 @bot.tree.command(name="skip")
