@@ -12,9 +12,9 @@ from autocomplete import play_autocomplete, playlists_autocomplete
 
 load_dotenv()
 
-TOKEN = os.getenv("DISCORD_TOKEN") or os.getenv("DISCORD_TOKEN_DEV")
+TOKEN = os.getenv("DISCORD_TOKEN_DEV")
 if not TOKEN:
-    raise RuntimeError("環境變數缺少 DISCORD_TOKEN 或 DISCORD_TOKEN_DEV")
+    raise RuntimeError("環境變數缺少DISCORD_TOKEN_DEV")
 
 INTENTS = discord.Intents.default()
 INTENTS.message_content = False
