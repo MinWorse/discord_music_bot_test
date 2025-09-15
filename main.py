@@ -41,6 +41,7 @@ async def on_ready():
 @app_commands.describe(song="請選擇歌曲")
 @app_commands.autocomplete(song=play_autocomplete)
 async def play(interaction: discord.Interaction, song: int):
+    """加入歌曲"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /play {song}（guild_id={guild_id}, user_id={user_id}）")
@@ -69,6 +70,7 @@ async def play(interaction: discord.Interaction, song: int):
 
 @bot.tree.command(name="disconnect")
 async def disconnect(interaction: discord.Interaction):
+    """中斷機器人連線"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /disconnect（guild_id={guild_id}, user_id={user_id}）")
@@ -125,6 +127,7 @@ async def pause(interaction: discord.Interaction):
 
 @bot.tree.command(name="resume")
 async def resume(interaction: discord.Interaction):
+    """繼續播放"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /resume（guild_id={guild_id}, user_id={user_id}）")
@@ -149,6 +152,7 @@ async def resume(interaction: discord.Interaction):
 
 @bot.tree.command(name="skip")
 async def skip(interaction: discord.Interaction):
+    """跳過當前歌曲"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /skip（guild_id={guild_id}, user_id={user_id}）")
@@ -171,6 +175,7 @@ async def skip(interaction: discord.Interaction):
 
 @bot.tree.command(name="reload")
 async def reload(interaction: discord.Interaction):
+    """更新歌曲"""
     guild_id = interaction.guild_id
     user_id = interaction.user.id
     logging.info(f"📝 使用者輸入 /reload（guild_id={guild_id}, user_id={user_id}）")
@@ -183,6 +188,7 @@ async def reload(interaction: discord.Interaction):
 @app_commands.describe(name="請選擇歌單名稱")
 @app_commands.autocomplete(name=playlists_autocomplete)
 async def show_playlist(interaction: discord.Interaction, name: str):
+    """查看歌單"""
     user_id = str(interaction.user.id)
     global_playlists = utils.load_global_playlists()
     user_playlists = utils.load_user_playlists(user_id)
